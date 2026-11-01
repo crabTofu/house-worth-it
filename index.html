@@ -55,6 +55,11 @@ button{font:inherit}
 .how h3{margin:0;font:700 16px/1.25 var(--display);font-stretch:110%}
 .how-x{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:6px}
 .how-x:hover{color:var(--ink);background:var(--soft)}
+.how p{margin:8px 0 0}
+.how b{color:var(--ink)}
+.rent-t{font-family:var(--body);font-size:13px;margin-top:10px}
+.rent-t th,.rent-t td{text-align:left;white-space:normal;vertical-align:top}
+.rent-t th:first-child,.rent-t td:first-child{position:static;font-weight:600;color:var(--ink)}
 .seesaw{margin:0;display:grid;justify-items:center;gap:6px;min-width:0}
 .seesaw svg{width:100%;max-width:420px;height:auto;display:block;overflow:visible}
 .seesaw figcaption{font-size:14px;color:var(--muted);text-align:center;text-wrap:balance}
@@ -256,7 +261,7 @@ tr.last td{font-weight:650}
       <p class="lede">The same capital, two routes: buy the house, or invest the cash and rent. Both people earn the same income. The renter spends part of it on rent; the owner doesn't have to, so the owner invests that same amount instead. Rent is counted once, as the owner's saving, which is why the renter's portfolio is never touched. Change any assumption and watch where the two meet.<button type="button" class="info" id="how-btn" aria-expanded="false" aria-controls="how" aria-label="How the comparison works">i</button></p>
       <p class="paths">
         <span><i class="dot b"></i>House path: buy, invest the rent you no longer pay, cover the running costs</span>
-        <span><i class="dot i"></i>Invest path: all the cash in the market, untouched; rent comes out of the same income</span>
+        <span><i class="dot i"></i>Invest path: all the cash in the market, untouched; rent comes out of the same income<button type="button" class="info" id="rent-btn" aria-expanded="false" aria-controls="rent" aria-label="How rent is counted">i</button></span>
       </p>
     </div>
     <figure class="seesaw">
@@ -282,13 +287,32 @@ tr.last td{font-weight:650}
       <figcaption id="see-cap"></figcaption>
     </figure>
     <div class="how notes" id="how" hidden>
-      <div class="how-head"><h3>How the comparison works</h3><button type="button" class="how-x" id="how-close" aria-label="Close">×</button></div>
+      <div class="how-head"><h3>How the comparison works</h3><button type="button" class="how-x" id="how-close" data-close="how" aria-label="Close">×</button></div>
       <ul>
         <li>With no mortgage, your starting capital equals the house price. With a mortgage you set it yourself. Both paths start from that capital. The invest path puts it in the market. The house path spends what it needs on the house: the price plus buying costs, less any loan. With the mortgage set to On top, the house path invests the cash the loan saves, so the invest path keeps all of your capital. With Cut off, both paths only use the deposit and costs, and the rest of your capital is left out.</li>
         <li>Rent equals the rental yield times the starting house price. The rent, service charge and maintenance you enter are today's money (year 0). With the inflation switch on, they rise with inflation from year 1 onwards.</li>
         <li>The house path keeps one cash balance. Each year it earns the market return, then rent saved is added and running costs and mortgage payments are taken off. A shortfall is funded from the market, so it costs the market return. The invest path leaves its portfolio untouched and pays the rent from income.</li>
         <li>Cash flows land at the end of each year. The break-even return is the market return at which both paths end with the same wealth.</li>
         <li>Tax on gains is charged once, in the final year when each path cashes out, and only the last point on the chart and the last row of the table include it. It is charged on its total profit with no allowances or indexing. The invest path's profit counts what it paid out as rent. Not modelled: income tax on dividends, council tax, insurance, empty periods and changes to ground rent.</li>
+      </ul>
+    </div>
+    <div class="how notes" id="rent" hidden>
+      <div class="how-head"><h3>How rent is counted</h3><button type="button" class="how-x" data-close="rent" aria-label="Close">×</button></div>
+      <p>A fair comparison only needs the difference in money between the two lives. Each year the owner is one year's rent better off than the renter, so rent is counted on one side only. Adding it to the house path and also taking it from the invest path would count it twice.</p>
+      <div class="tw"><table class="rent-t">
+        <thead><tr><th>Way to count it</th><th>House path</th><th>Invest path</th><th>Owner's advantage</th></tr></thead>
+        <tbody>
+          <tr><td>A. What this model does</td><td>+ rent, invested</td><td>Untouched</td><td>1× rent</td></tr>
+          <tr><td>B. The other way round</td><td>Nothing</td><td>− rent, taken from the portfolio</td><td>1× rent</td></tr>
+          <tr><td>Both (wrong)</td><td>+ rent</td><td>− rent</td><td class="c-neg">2× rent, double counted</td></tr>
+          <tr><td>Neither (wrong)</td><td>Nothing</td><td>Nothing</td><td class="c-neg">0, rent ignored</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>A and B give the same answer.</b> In A, the rent the owner saves grows at the market return inside the house path. In B, the rent the renter pays would have grown at the same return, so the invest path loses exactly that amount. The two totals move, but the gap between them and the break-even return stay the same. Running costs and mortgage payments work the same way: only the owner has them, so they come off the house path only.</p>
+      <ul>
+        <li><b>Totals:</b> here both figures are wealth on top of the income both people share, so the house path's total looks bigger than it would under B. Only the gap is meaningful.</li>
+        <li><b>Tax:</b> moving rent from one pot to the other changes which one earns the gains, so the tax at cash-out can differ slightly.</li>
+        <li><b>Running short:</b> under B, a small portfolio could run out. Here that shows up as a negative cash pot on the house path, treated as funded from the market.</li>
       </ul>
     </div>
   </header>
@@ -976,16 +1000,24 @@ function update(){
   try{localStorage.setItem('hvm-v2',JSON.stringify(S));}catch(e){}
 }
 
-/* ---------- how it works ---------- */
-function setHow(open){
-  $('#how').hidden=!open; $('#how-btn').setAttribute('aria-expanded',String(open));
-  if(!open) $('#how-btn').focus();
+/* ---------- info panels ---------- */
+function setInfo(id,open){
+  const panel=$('#'+id),btn=document.querySelector(`.info[aria-controls="${id}"]`); if(!panel||!btn) return;
+  if(open) document.querySelectorAll('.info[aria-expanded="true"]').forEach(o=>{
+    if(o!==btn){o.setAttribute('aria-expanded','false');$('#'+o.getAttribute('aria-controls')).hidden=true;}
+  });
+  panel.hidden=!open; btn.setAttribute('aria-expanded',String(open));
+  if(!open) btn.focus();
 }
 document.addEventListener('click',e=>{
-  const b=e.target.closest&&e.target.closest('#how-btn,#how-close');
-  if(b) setHow(b.id==='how-btn'?$('#how').hidden:false);
+  const b=e.target.closest&&e.target.closest('.info,.how-x'); if(!b) return;
+  if(b.classList.contains('info')){const id=b.getAttribute('aria-controls');setInfo(id,$('#'+id).hidden);}
+  else setInfo(b.dataset.close,false);
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#how').hidden) setHow(false); });
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape') return;
+  const b=document.querySelector('.info[aria-expanded="true"]'); if(b) setInfo(b.getAttribute('aria-controls'),false);
+});
 
 /* ---------- theme ---------- */
 const mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null,root=document.documentElement;
